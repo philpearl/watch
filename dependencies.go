@@ -70,18 +70,25 @@ func (d *dependencies) AddDir(dirname string) error {
 
 // FindPackagesToRebuild finds all packages that may need to be rebuilt if the
 // given file has changed
-func (d *dependencies) FindPackagesToRebuild(filename string) (map[string]struct{}, error) {
-	pkgname, err := d.dirnameToPkgName(filepath.Dir(filename))
-	if err != nil {
-		return nil, err
-	}
+func (d *dependencies) FindPackagesToRebuild(filenames ...string) (map[string]struct{}, error) {
+	pkgs := map[string]struct{}{}
 
-	// We know we need to rebuild the current package.
-	pkgs := map[string]struct{}{
-		pkgname: struct{}{},
+	for _, filename := range filenames {
+		pkgname, err := d.dirnameToPkgName(filepath.Dir(filename))
+		if err != nil {
+			return nil, err
+		}
+
+		if _, seen := pkgs[pkgname]; seen {
+			continue
+		}
+
+		// We know we need to rebuild the current package.
+		pkgs[pkgname] = struct{}{}
+
+		// Add packages that depend on the current one.
+		d.getBuildTree(pkgs, pkgname)
 	}
-	// Add packages that depend on the current one.
-	d.getBuildTree(pkgs, pkgname)
 
 	return pkgs, nil
 }
