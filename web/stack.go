@@ -6,6 +6,7 @@ import (
 	"time"
 
 	"github.com/philpearl/rebuilder"
+	"github.com/philpearl/rebuilder/base"
 )
 
 type web struct {
@@ -13,7 +14,7 @@ type web struct {
 	mux        *http.ServeMux
 }
 
-func NewWeb(testrunner *rebuilder.TestRunner) *web {
+func NewWeb(cxt *base.Context, testrunner *rebuilder.TestRunner) *web {
 	return &web{
 		testrunner: testrunner,
 		mux:        http.NewServeMux(),

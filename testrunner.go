@@ -7,6 +7,8 @@ import (
 	"path/filepath"
 	"sync"
 	"time"
+
+	"github.com/philpearl/rebuilder/base"
 )
 
 type TestResult struct {
@@ -20,11 +22,13 @@ type TestResult struct {
 type TestRunner struct {
 	sync.RWMutex
 	results map[string]*TestResult
+	context *base.Context
 }
 
-func NewTestRunner() *TestRunner {
+func NewTestRunner(c *base.Context) *TestRunner {
 	return &TestRunner{
 		results: make(map[string]*TestResult),
+		context: c,
 	}
 }
 

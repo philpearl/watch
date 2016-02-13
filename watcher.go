@@ -6,6 +6,7 @@ import (
 	"path/filepath"
 	"strings"
 
+	"github.com/philpearl/rebuilder/base"
 	"github.com/rjeczalik/notify"
 )
 
@@ -13,7 +14,7 @@ type Runner interface {
 	Run(pkg string)
 }
 
-func Watch(runners ...Runner) error {
+func Watch(cxt *base.Context, runners ...Runner) error {
 
 	d := NewDependencies()
 	fmt.Printf("Parsing dependencies\n")
@@ -21,10 +22,13 @@ func Watch(runners ...Runner) error {
 	fmt.Printf("Loaded\n")
 
 	ch := make(chan notify.EventInfo, 1000)
-	path := filepath.Join(os.Getenv("GOPATH"), "src", "github.com/unravelin", "...")
-	err := notify.Watch(path, ch, notify.Write, notify.Rename, notify.Remove, notify.Create)
-	if err != nil {
-		return fmt.Errorf("Failed to start filesystem watch for %s. %v", path, err)
+
+	for _, path := range cxt.Config.WatchPaths {
+		path := filepath.Join(os.Getenv("GOPATH"), "src", path, "...")
+		err := notify.Watch(path, ch, notify.Write, notify.Rename, notify.Remove, notify.Create)
+		if err != nil {
+			return fmt.Errorf("Failed to start filesystem watch for %s. %v", path, err)
+		}
 	}
 
 	paths := pathlist{}
@@ -32,7 +36,7 @@ func Watch(runners ...Runner) error {
 	for ev := range ch {
 		// Something has changed. Drain any queued events
 		paths = paths[:0]
-		paths.add(ev.Path())
+		paths.add(cxt, ev.Path())
 	Drain:
 		for {
 			select {
@@ -40,7 +44,7 @@ func Watch(runners ...Runner) error {
 				if !ok {
 					break Drain
 				}
-				paths.add(ev.Path())
+				paths.add(cxt, ev.Path())
 			default:
 				break Drain
 			}
@@ -69,7 +73,7 @@ func Watch(runners ...Runner) error {
 
 type pathlist []string
 
-func (l *pathlist) add(path string) {
+func (l *pathlist) add(cxt *base.Context, path string) {
 	// We don't want to look inside directories or files that start with a .,
 	// e.g. .git
 	parts := strings.Split(path, "/")
@@ -80,8 +84,10 @@ func (l *pathlist) add(path string) {
 	}
 
 	// In a generic system we may want to exclude some files
-	if filepath.Base(path) == "version.go" {
-		return
+	for _, excl := range cxt.Config.Skip {
+		if filepath.Base(path) == excl {
+			return
+		}
 	}
 
 	*l = append(*l, path)
