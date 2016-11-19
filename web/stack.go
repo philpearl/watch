@@ -10,19 +10,19 @@ import (
 )
 
 type web struct {
-	testrunner *rebuilder.TestRunner
-	mux        *http.ServeMux
+	track *rebuilder.Track
+	mux   *http.ServeMux
 }
 
-func NewWeb(cxt *base.Context, testrunner *rebuilder.TestRunner) *web {
+func NewWeb(cxt *base.Context, track *rebuilder.Track) *web {
 	return &web{
-		testrunner: testrunner,
-		mux:        http.NewServeMux(),
+		track: track,
+		mux:   http.NewServeMux(),
 	}
 }
 
 func (w *web) Setup() {
-	w.mux.HandleFunc("/tests", w.tests)
+	w.mux.HandleFunc("/status", w.status)
 }
 
 func (w *web) Run() {

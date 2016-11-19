@@ -9,14 +9,14 @@ import (
 	"path/filepath"
 	"strings"
 	"sync"
-	// "time"
 
 	"github.com/philpearl/rebuilder/base"
+	"github.com/philpearl/rebuilder/wire"
 )
 
 type Builder struct {
+	sync.Once
 	context  *base.Context
-	envOnce  sync.Once
 	buildEnv []string
 }
 
@@ -26,21 +26,32 @@ func NewBuilder(context *base.Context) *Builder {
 	}
 }
 
-func (b *Builder) Run(pkg string) {
+func (*Builder) Type() wire.TaskType { return wire.TaskTypeBuild }
+
+func (b *Builder) Run(pkg string) (string, error) {
+	var output []byte
+	var err error
 	dirname := filepath.Join(os.Getenv("GOPATH"), "src", pkg)
 
 	if b.shouldBuild(dirname) {
 		fmt.Printf("Build %s\n", pkg)
+
 		cmd := exec.Command("go", "build", "-o", b.outputPath(pkg))
 		cmd.Env = b.getEnv()
 		cmd.Dir = dirname
-
-		output, err := cmd.CombinedOutput()
+		output, err = cmd.CombinedOutput()
 
 		if err != nil {
 			fmt.Printf("Build failed. %v. %s\n", err, string(output))
 		}
 	}
+
+	return string(output), err
+}
+
+func (b *Builder) WillRun(pkg string) bool {
+	dirname := filepath.Join(os.Getenv("GOPATH"), "src", pkg)
+	return b.shouldBuild(dirname)
 }
 
 func (b *Builder) outputPath(pkg string) string {
@@ -49,8 +60,8 @@ func (b *Builder) outputPath(pkg string) string {
 }
 
 func (b *Builder) getEnv() []string {
-	// Environment shouldn't change while the program is running
-	b.envOnce.Do(func() {
+	b.Once.Do(func() {
+		// Environment shouldn't change while the program is running
 		// env is a list of key=value
 		env := os.Environ()
 		eset := make(map[string]string, len(env))

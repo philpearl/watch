@@ -4,8 +4,6 @@ import (
 	"fmt"
 	"html/template"
 	"net/http"
-
-	"github.com/philpearl/rebuilder"
 )
 
 var testtemplate = template.Must(template.New("tests").Parse(`
@@ -27,16 +25,13 @@ var testtemplate = template.Must(template.New("tests").Parse(`
 </html>
 `))
 
-func (ww *web) tests(w http.ResponseWriter, r *http.Request) {
-	failingTests := ww.testrunner.GetResults()
+func (ww *web) status(w http.ResponseWriter, r *http.Request) {
+	h := w.Header()
+	h.Set("Content-Type", "application/json; charset=utf-8")
 
-	err := testtemplate.Execute(w, struct {
-		Results []*rebuilder.TestResult
-	}{
-		Results: failingTests,
-	})
+	err := ww.track.WriteStatus(w)
 
 	if err != nil {
-		fmt.Fprintf(w, "Failed to execute template. %v", err)
+		fmt.Fprintf(w, "Failed to marshal. %v", err)
 	}
 }

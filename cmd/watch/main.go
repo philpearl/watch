@@ -17,12 +17,13 @@ func main() {
 
 	tr := rebuilder.NewTestRunner(c)
 	builder := rebuilder.NewBuilder(c)
-	w := web.NewWeb(c, tr) // TODO: add builder, or a results store
+	track := rebuilder.NewTrack()
+	w := web.NewWeb(c, track)
 
 	w.Setup()
 	go w.Run()
 
-	err := rebuilder.Watch(c, tr, builder)
+	err := rebuilder.Watch(c, track, tr, builder)
 
 	fmt.Println(err.Error)
 }

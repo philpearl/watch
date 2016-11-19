@@ -74,6 +74,7 @@ func (d *dependencies) FindPackagesToRebuild(filenames ...string) (map[string]st
 	pkgs := map[string]struct{}{}
 
 	for _, filename := range filenames {
+		log.Printf("%s has changed", filename)
 		pkgname, err := d.dirnameToPkgName(filepath.Dir(filename))
 		if err != nil {
 			return nil, err
@@ -95,6 +96,7 @@ func (d *dependencies) FindPackagesToRebuild(filenames ...string) (map[string]st
 
 // getBuildTree adds packages to build to pkgs which are dependent on currPkg
 func (d *dependencies) getBuildTree(pkgs map[string]struct{}, currPkg string) {
+	log.Printf("look at package %s", currPkg)
 	// Find packages which are immediately dependent on currPkg
 	newPkgs := d.pkgsToBuild.rebuild(currPkg)
 	for pkg := range newPkgs {

@@ -7,14 +7,17 @@ import (
 	"strings"
 
 	"github.com/philpearl/rebuilder/base"
+	"github.com/philpearl/rebuilder/wire"
 	"github.com/rjeczalik/notify"
 )
 
 type Runner interface {
-	Run(pkg string)
+	Run(pkg string) (string, error)
+	Type() wire.TaskType
+	WillRun(pkg string) bool
 }
 
-func Watch(cxt *base.Context, runners ...Runner) error {
+func Watch(cxt *base.Context, track *Track, runners ...Runner) error {
 
 	d := NewDependencies()
 	fmt.Printf("Parsing dependencies\n")
@@ -62,7 +65,17 @@ func Watch(cxt *base.Context, runners ...Runner) error {
 		} else {
 			for _, runner := range runners {
 				for pkg := range pkgs {
-					runner.Run(pkg)
+					if runner.WillRun(pkg) {
+						track.Pending(pkg, runner.Type())
+					}
+				}
+			}
+
+			for _, runner := range runners {
+				for pkg := range pkgs {
+					track.Started(pkg, runner.Type())
+					output, err := runner.Run(pkg)
+					track.Ended(pkg, runner.Type(), err, output)
 				}
 			}
 		}
