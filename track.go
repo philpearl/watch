@@ -23,6 +23,7 @@ type Track struct {
 func NewTrack() *Track {
 	return &Track{
 		tasks: make(map[taskKey]*wire.Task),
+		list:  make([]*wire.Task),
 	}
 }
 

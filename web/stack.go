@@ -23,6 +23,8 @@ func NewWeb(cxt *base.Context, track *rebuilder.Track) *web {
 
 func (w *web) Setup() {
 	w.mux.HandleFunc("/status", w.status)
+
+	w.mux.Handle("/", http.FileServer(http.Dir("public")))
 }
 
 func (w *web) Run() {
